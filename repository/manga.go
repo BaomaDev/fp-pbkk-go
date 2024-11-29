@@ -17,7 +17,7 @@ func NewMangaRepository(db *sql.DB) MangaRepositoryInterface {
 
 // DeleteManga implements MangaRepositoryInterface
 func (m *MangaRepository) DeleteManga(id uint) bool {
-	_, err := m.Db.Exec("DELETE FROM manga WHERE id = $1", id)
+	_, err := m.Db.Exec("DELETE FROM manga WHERE id = ?", id)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -36,18 +36,27 @@ func (m *MangaRepository) GetAllManga() []model.Manga {
 	if query != nil {
 		for query.Next() {
 			var (
-				id       uint
-				title    string
-				genre    string
-				volumes  uint8
-				chapters uint16
-				author   string
+				id          uint
+				title       string
+				genre       string
+				volumes     uint8
+				chapters    uint16
+				author      string
+				description string
 			)
-			err := query.Scan(&id, &title, &genre, &volumes, &chapters, &author)
+			err := query.Scan(&id, &title, &genre, &volumes, &chapters, &author, &description)
 			if err != nil {
 				log.Println(err)
 			}
-			manga := model.Manga{Id: id, Title: title, Genre: genre, Volumes: volumes, Chapters: chapters, Author: author}
+			manga := model.Manga{
+				Id:          id,
+				Title:       title,
+				Genre:       genre,
+				Volumes:     volumes,
+				Chapters:    chapters,
+				Author:      author,
+				Description: description,
+			}
 			mangas = append(mangas, manga)
 		}
 	}
@@ -56,7 +65,7 @@ func (m *MangaRepository) GetAllManga() []model.Manga {
 
 // GetOneManga implements MangaRepositoryInterface
 func (m *MangaRepository) GetOneManga(id uint) model.Manga {
-	query, err := m.Db.Query("SELECT * FROM manga WHERE id = $1", id)
+	query, err := m.Db.Query("SELECT * FROM manga WHERE id = ?", id)
 	if err != nil {
 		log.Println(err)
 		return model.Manga{}
@@ -65,18 +74,27 @@ func (m *MangaRepository) GetOneManga(id uint) model.Manga {
 	if query != nil {
 		for query.Next() {
 			var (
-				id       uint
-				title    string
-				genre    string
-				volumes  uint8
-				chapters uint16
-				author   string
+				id          uint
+				title       string
+				genre       string
+				volumes     uint8
+				chapters    uint16
+				author      string
+				description string
 			)
-			err := query.Scan(&id, &title, &genre, &volumes, &chapters, &author)
+			err := query.Scan(&id, &title, &genre, &volumes, &chapters, &author, &description)
 			if err != nil {
 				log.Println(err)
 			}
-			manga = model.Manga{Id: id, Title: title, Genre: genre, Volumes: volumes, Chapters: chapters, Author: author}
+			manga = model.Manga{
+				Id:          id,
+				Title:       title,
+				Genre:       genre,
+				Volumes:     volumes,
+				Chapters:    chapters,
+				Author:      author,
+				Description: description,
+			}
 		}
 	}
 	return manga
@@ -84,14 +102,14 @@ func (m *MangaRepository) GetOneManga(id uint) model.Manga {
 
 // InsertManga implements MangaRepositoryInterface
 func (m *MangaRepository) InsertManga(post model.PostManga) bool {
-	stmt, err := m.Db.Prepare("INSERT INTO manga(title, genre, volumes, chapters, author) VALUES ($1,$2,$3,$4,$5)")
+	stmt, err := m.Db.Prepare("INSERT INTO manga(title, genre, volumes, chapters, author, description) VALUES (?,?,?,?,?,?)")
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 	defer stmt.Close()
 
-	_, err2 := stmt.Exec(post.Title, post.Genre, post.Volumes, post.Chapters, post.Author)
+	_, err2 := stmt.Exec(post.Title, post.Genre, post.Volumes, post.Chapters, post.Author, post.Description)
 	if err2 != nil {
 		log.Println(err2)
 		return false
@@ -101,7 +119,9 @@ func (m *MangaRepository) InsertManga(post model.PostManga) bool {
 
 // UpdateManga implements MangaRepositoryInterface
 func (m *MangaRepository) UpdateManga(id uint, post model.PostManga) model.Manga {
-	_, err := m.Db.Exec("UPDATE manga SET title = $1, genre = $2, volumes = $3, chapters = $4, author = $5 WHERE id = $6", post.Title, post.Genre, post.Volumes, post.Chapters, post.Author, id)
+	_, err := m.Db.Exec(
+		"UPDATE manga SET title = ?, genre = ?, volumes = ?, chapters = ?, author = ?, description = ? WHERE id = ?",
+		post.Title, post.Genre, post.Volumes, post.Chapters, post.Author, post.Description, id)
 	if err != nil {
 		log.Println(err)
 		return model.Manga{}
