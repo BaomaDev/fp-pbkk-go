@@ -18,11 +18,30 @@ func NewChapterController(db *sql.DB) *ChapterController {
 	return &ChapterController{Db: db}
 }
 
+// GetChapters retrieves chapters for a given manga ID
+func (ch *ChapterController) GetChapters(c *gin.Context) {
+	DB := ch.Db
+	var uri model.MangaUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "msg": err.Error()})
+		return
+	}
+
+	repository := repository.NewChapterRepository(DB)
+	chapters := repository.GetChaptersByMangaID(uri.ID)
+	if chapters != nil {
+		c.JSON(http.StatusOK, gin.H{"status": "success", "data": chapters, "msg": "Chapters retrieved successfully"})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"status": "success", "data": nil, "msg": "No chapters found"})
+	}
+}
+
+// InsertChapter adds a new chapter
 func (ch *ChapterController) InsertChapter(c *gin.Context) {
 	DB := ch.Db
 	var post model.PostChapter
 
-	// Bind request to the PostChapter struct
+	// Bind request data
 	if err := c.ShouldBind(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "msg": err.Error()})
 		return
@@ -44,11 +63,11 @@ func (ch *ChapterController) InsertChapter(c *gin.Context) {
 	}
 	post.PdfPath = filePath
 
-	// Save chapter data to the database
+	// Insert chapter into the database
 	repository := repository.NewChapterRepository(DB)
 	if repository.InsertChapter(post) {
 		c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "Chapter inserted successfully"})
 	} else {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "msg": "Failed to insert chapter"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "msg": "Failed to insert chapter. Chapter number might already exist for this manga"})
 	}
 }

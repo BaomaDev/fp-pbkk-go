@@ -5,6 +5,7 @@ import (
 
 	"github.com/USER/fp-pbkk-go/controller"
 	"github.com/USER/fp-pbkk-go/db"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,14 +15,14 @@ type App struct {
 }
 
 func (a *App) CreateConnection() {
-	// Establish the database connection
 	a.DB = db.Connectdb()
 }
 
 func (a *App) Routes() {
 	r := gin.Default()
+	r.Use(cors.Default())
+	r.Static("/uploads", "./uploads")
 
-	// Initialize MangaController and add routes
 	mangaController := controller.NewMangaController(a.DB)
 	r.POST("/manga", mangaController.InsertManga)
 	r.GET("/manga", mangaController.GetAllManga)
@@ -29,15 +30,12 @@ func (a *App) Routes() {
 	r.PUT("/manga/:id", mangaController.UpdateManga)
 	r.DELETE("/manga/:id", mangaController.DeleteManga)
 
-	// Initialize ChapterController and add routes
 	chapterController := controller.NewChapterController(a.DB)
 	r.POST("/chapter", chapterController.InsertChapter)
-
-	// Store the router in App struct
+	r.GET("/chapter/:id", chapterController.GetChapters)
 	a.Router = r
 }
 
 func (a *App) Run() {
-	// Run the Gin server
 	a.Router.Run(":8080")
 }
