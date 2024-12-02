@@ -14,3 +14,8 @@ type PostChapter struct {
 	Title     string `form:"title" json:"title" binding:"required"`
 	PdfPath   string `json:"pdf_path"`
 }
+
+type ChapterUri struct {
+    MangaID   uint `uri:"manga_id" binding:"required"`
+    ChapterID uint `uri:"chapter_id" binding:"required"`
+}

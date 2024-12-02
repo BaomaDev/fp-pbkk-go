@@ -2,8 +2,8 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MangaList from "./components/MangaList";
 import MangaDetail from "./components/MangaDetail";
-import UploadChapter from "./crud/UploadChapter";
 import ManageManga from "./crud/ManageManga";
+import ManageChapter from "./crud/UploadChapter";
 
 function App() {
     return (
@@ -16,7 +16,7 @@ function App() {
                     <Routes>
                         <Route path="/" element={<MangaList />} />
                         <Route path="/manga/:id" element={<MangaDetail />} />
-                        <Route path="/upload-chapter" element={<UploadChapter />} />
+                        <Route path="/manage-chapter" element={<ManageChapter />} />
                         <Route path="/manage-manga" element={<ManageManga />} />
                     </Routes>
                 </main>
