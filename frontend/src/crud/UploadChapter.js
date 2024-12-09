@@ -104,8 +104,8 @@
 
 // export default UploadChapter;
 
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import ChapterService from "../services/chapterService";
 
 const ManageChapter = () => {
     const [formData, setFormData] = useState({
@@ -115,7 +115,25 @@ const ManageChapter = () => {
         pdfFile: null,
     });
 
-    const [chapters, setChapters] = useState([]); // Added chapters state
+    const [chapters, setChapters] = useState([]); // To store fetched chapters
+    const [deleteMangaId, setDeleteMangaId] = useState(""); // Manga ID for deletion
+    const [deleteChapterNo, setDeleteChapterNo] = useState(""); // Chapter number for deletion
+
+    // Function to fetch chapters by manga ID
+    const fetchChapters = async (mangaId) => {
+        try {
+            const response = await ChapterService.getByMangaId(mangaId);
+            setChapters(response.data); // Set the chapters state
+        } catch (error) {
+            console.error("Error fetching chapters:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (formData.mangaId) {
+            fetchChapters(formData.mangaId); // Fetch chapters on mangaId change
+        }
+    }, [formData.mangaId]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -135,36 +153,24 @@ const ManageChapter = () => {
             formDataToSend.append("title", formData.title);
             formDataToSend.append("pdf", formData.pdfFile);
 
-            await axios.post("http://localhost:8080/chapter", formDataToSend, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-
+            await ChapterService.create(formDataToSend);
             alert("Chapter uploaded successfully!");
             setFormData({ mangaId: "", chapterNo: 0, title: "", pdfFile: null });
-            fetchChapters(formData.mangaId); // Fetch updated chapter list after upload
+            fetchChapters(formData.mangaId); // Fetch updated chapters after upload
         } catch (error) {
             console.error("Error uploading chapter:", error);
             alert("Failed to upload chapter. Please try again.");
         }
     };
 
-    const fetchChapters = async (mangaId) => {
-        try {
-            const response = await axios.get(`http://localhost:8080/manga/${mangaId}/chapters`);
-            setChapters(response.data); // Assuming the API returns an array of chapters
-        } catch (error) {
-            console.error("Error fetching chapters:", error);
-        }
-    };
-
-    const handleDeleteChapter = async (mangaId, chapterNo) => {
+    const handleDeleteChapter = async () => {
         if (window.confirm("Are you sure you want to delete this chapter?")) {
             try {
-                await axios.delete(`http://localhost:8080/chapter/${mangaId}/${chapterNo}`);
+                await ChapterService.delete(deleteMangaId, deleteChapterNo);
                 alert("Chapter deleted successfully!");
-                fetchChapters(mangaId); // Fetch updated chapter list after deletion
+                fetchChapters(deleteMangaId); // Fetch updated chapters list after deletion
+                setDeleteMangaId(""); // Reset delete manga ID
+                setDeleteChapterNo(""); // Reset delete chapter number
             } catch (error) {
                 console.error("Error deleting chapter:", error);
                 alert("Failed to delete chapter. Please try again.");
@@ -174,17 +180,75 @@ const ManageChapter = () => {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">Manage Chapter</h2>
+            <h2 className="text-2xl font-bold mb-6">Manage Chapters</h2>
 
-            <form onSubmit={handleSubmitChapter} className="bg-white shadow-md rounded-md p-6 mb-6">
+            {/* Section 1: Upload Chapter */}
+            <div className="bg-white shadow-md rounded-md p-6 mb-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Upload Chapter</h3>
+                <form onSubmit={handleSubmitChapter}>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-1">Manga ID</label>
+                        <input
+                            type="number"
+                            name="mangaId"
+                            value={formData.mangaId}
+                            onChange={handleInputChange}
+                            className="w-full border-gray-300 rounded-md p-2"
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-1">Chapter Number</label>
+                        <input
+                            type="number"
+                            name="chapterNo"
+                            value={formData.chapterNo}
+                            onChange={handleInputChange}
+                            className="w-full border-gray-300 rounded-md p-2"
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-1">Chapter Title</label>
+                        <input
+                            type="text"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleInputChange}
+                            className="w-full border-gray-300 rounded-md p-2"
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-1">Upload PDF</label>
+                        <input
+                            type="file"
+                            name="pdfFile"
+                            onChange={handleFileChange}
+                            className="w-full border-gray-300 rounded-md p-2"
+                            accept="application/pdf"
+                            required
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+                    >
+                        Upload Chapter
+                    </button>
+                </form>
+            </div>
+
+            {/* Section 2: Delete Chapter */}
+            <div className="bg-white shadow-md rounded-md p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Delete Chapter</h3>
                 <div className="mb-4">
                     <label className="block text-gray-700 font-bold mb-1">Manga ID</label>
                     <input
                         type="number"
-                        name="mangaId"
-                        value={formData.mangaId}
-                        onChange={handleInputChange}
+                        name="deleteMangaId"
+                        value={deleteMangaId}
+                        onChange={(e) => setDeleteMangaId(e.target.value)}
                         className="w-full border-gray-300 rounded-md p-2"
                         required
                     />
@@ -193,51 +257,29 @@ const ManageChapter = () => {
                     <label className="block text-gray-700 font-bold mb-1">Chapter Number</label>
                     <input
                         type="number"
-                        name="chapterNo"
-                        value={formData.chapterNo}
-                        onChange={handleInputChange}
+                        name="deleteChapterNo"
+                        value={deleteChapterNo}
+                        onChange={(e) => setDeleteChapterNo(e.target.value)}
                         className="w-full border-gray-300 rounded-md p-2"
-                        required
-                    />
-                </div>
-                <div className="mb-4">
-                    <label className="block text-gray-700 font-bold mb-1">Chapter Title</label>
-                    <input
-                        type="text"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                        className="w-full border-gray-300 rounded-md p-2"
-                        required
-                    />
-                </div>
-                <div className="mb-4">
-                    <label className="block text-gray-700 font-bold mb-1">Upload PDF</label>
-                    <input
-                        type="file"
-                        name="pdfFile"
-                        onChange={handleFileChange}
-                        className="w-full border-gray-300 rounded-md p-2"
-                        accept="application/pdf"
                         required
                     />
                 </div>
                 <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+                    onClick={handleDeleteChapter}
+                    className="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600"
                 >
-                    Upload Chapter
+                    Delete Chapter
                 </button>
-            </form>
+            </div>
 
-            <div>
+            {/* Display Chapters Section */}
+            <div className="mt-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Chapters</h3>
                 <table className="min-w-full bg-white shadow-md rounded-md overflow-hidden">
                     <thead>
                         <tr>
                             <th className="px-4 py-2 text-left">Chapter No</th>
                             <th className="px-4 py-2 text-left">Title</th>
-                            <th className="px-4 py-2 text-left">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -245,14 +287,6 @@ const ManageChapter = () => {
                             <tr key={chapter.chapterNo}>
                                 <td className="px-4 py-2">{chapter.chapterNo}</td>
                                 <td className="px-4 py-2">{chapter.title}</td>
-                                <td className="px-4 py-2">
-                                    <button
-                                        onClick={() => handleDeleteChapter(chapter.mangaId, chapter.chapterNo)}
-                                        className="text-red-500 hover:underline"
-                                    >
-                                        Delete Chapter
-                                    </button>
-                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -263,4 +297,3 @@ const ManageChapter = () => {
 };
 
 export default ManageChapter;
-

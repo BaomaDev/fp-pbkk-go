@@ -72,22 +72,18 @@ func (ch *ChapterController) InsertChapter(c *gin.Context) {
 	}
 }
 
-// DeleteManga implements MangaControllerInterface
 func (m *ChapterController) DeleteChapter(c *gin.Context) {
 	DB := m.Db
 	var uri model.ChapterUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(400, gin.H{"status": "failed", "msg": err})
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "msg": err.Error()})
 		return
 	}
 	repository := repository.NewChapterRepository(DB)
-	delete := repository.DeleteChapter(uri.MangaID ,uri.ChapterID)
-	if delete {
-		c.JSON(200, gin.H{"status": "success", "msg": "delete manga successfully"})
-		return
+	success := repository.DeleteChapter(uri.MangaID, uri.ChapterID)
+	if success {
+		c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "Chapter deleted successfully"})
 	} else {
-		c.JSON(500, gin.H{"status": "failed", "msg": "delete manga failed"})
-		return
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "msg": "Failed to delete chapter"})
 	}
 }
-
